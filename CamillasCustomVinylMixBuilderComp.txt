@@ -1,0 +1,189 @@
+<aura:component controller="CamillasCustomVinylMixNewCtrl" implements="flexipage:availableForRecordHome,lightning:actionOverride,force:hasRecordId" >
+    
+    <!--attributes ..-->
+    <aura:attribute name="pageReference"
+                    type="String"/>    
+    <aura:attribute name="recordId"
+                    type="String"/>    
+    <aura:attribute name="trackCount"
+                    type="Integer"
+                    default='0' />
+    <aura:attribute name="remainingTracks"
+                    type="Integer" 
+                    default='20' />
+    <aura:attribute name="mixLength"
+                    type="decimal"
+                    default='0.0' />
+    <aura:attribute name="remainingMixLength"
+                    type="decimal"
+                    default='90.0' />
+    <aura:attribute name="mixRecord"
+                    type="Mix__c"
+                    default="{'sobjectType':'Mix__c',
+                             'Name':'',
+                             'Customer__c':''}" />
+    <aura:attribute name="selectedSongsInMixBuilderList"
+                    type="Song__c[]" />
+    <aura:attribute name="error"
+                    type="String" />    
+    <aura:attribute name="mixNew"
+                    type="String"
+                    default="New Mix" />
+    <!--attributes ..-->
+    
+    <!--calling doInitAction method ..--> 
+    <aura:handler name="init" value="{!this}" action="{!c.doInitAction}" />
+    <aura:handler name="componentEvent" event="c:componentEvent" action="{!c.componentEventFired}"/>
+    <!--calling doInitAction method ..-->
+    
+    <!--form goes here ..-->    
+    <form class="slds-form--stacked slds-center">  
+        
+        <span class="slds-image">
+            <img class="slds-size_xx-small" src="{!$Resource.ccvImage}" />
+        </span>
+        
+        <!--card ..-->
+        <lightning:card title="{!if(v.mixRecord.Name==null || v.mixRecord.Name=='', v.mixNew, v.mixRecord.Name)}"
+                        iconName="custom:custom71">
+        </lightning:card>
+        <!--card ..-->
+        
+        <!--buttons ..-->
+        <div class="slds-align_absolute-center">
+            <lightning:button class="slds-button slds-button_brand"
+                              label="save"
+                              disabled="{!if(v.mixRecord.Customer__c==''
+                                        ||v.mixRecord.Customer__c==null, true, false)}"
+                              onclick="{!c.save}"/>
+            <lightning:button class="slds-button slds-button_outline-brand" label="cancel" onclick="{!c.cancel}"/>
+        </div>
+        <!--buttons ..-->
+        
+        <br/>
+        <aura:if isTrue="{!v.trackCountError}">
+            <ui:outputText value="Track License limit reached .." />
+        </aura:if>
+        
+        <!--header ..-->
+        <lightning:layout class="slds-builder-toolbar ">
+            <h1 class="slds-text-heading--small">Mix Builder</h1>
+        </lightning:layout>
+        <!--header ..-->
+        
+        <!--div for Mix Builder ..-->
+        <div  style="width:50%">
+            <lightning:recordEditForm aura:id="recordViewForm"
+                                      objectApiName="Mix__c">
+                <lightning:layout>
+                    <lightning:layoutItem size="2" >
+                    </lightning:layoutItem>
+                    <lightning:layoutItem size="8">
+                        <!--<lightning:inputField aura:id="auraIdName"
+                                              fieldName="Name"
+                                              value="{!v.mixRecord.Name}"
+                                              required="true" />-->
+                        <lightning:input aura:id="auraIdName"
+                                         name="Name"
+                                         value="{!v.mixRecord.Name}"
+                                         required="true" />
+                    </lightning:layoutItem>
+                    <lightning:layoutItem size="2" >
+                    </lightning:layoutItem>
+                    <lightning:layoutItem size="8">
+                        <!--<lightning:inputField aura:id="auraIdCustomer"
+                                              fieldName="Customer__c"
+                                              value="{!v.mixRecord.Customer__c}"/>-->
+                        <div class="{!if(v.recordId ==null,'slds-show','slds-hide')}">
+                            Customer
+                            <br/>
+                            <force:inputField aura:id="auraIdCustomer"
+                                              value="{!v.mixRecord.Customer__c}"
+                                              required="true"
+                                              class=".slds-combobox-group" />
+                        </div>
+                        
+                        <div class="{!if(v.recordId ==null,'slds-hide','slds-show')}">
+                            Customer
+                            <br/>
+                            <lightning:formattedText value="{!v.mixRecord.Customer__r.Name}" />
+                        </div>
+                    </lightning:layoutItem>
+                </lightning:layout>
+            </lightning:recordEditForm>
+        </div>
+        <!--div for Mix Builder ..-->
+        
+        <!--div for Mix Summary ..-->
+        <lightning:layout class="slds-builder-toolbar">
+            <h1 class="slds-text-heading--small">Mix Summary</h1>
+        </lightning:layout>
+        <br/>
+        <lightning:layout >
+            <lightning:layoutItem size="1" >
+            </lightning:layoutItem>
+            <lightning:layoutItem size="2" >
+                <ui:outputText value="Track Count" />
+            </lightning:layoutItem>
+            <lightning:layoutItem size="2" >
+                <ui:outputText value="{!v.trackCount}" />
+            </lightning:layoutItem>
+            <lightning:layoutItem size="1" >
+            </lightning:layoutItem>
+            <lightning:layoutItem size="2" >
+                <ui:outputText value="Remaining Tracks" />
+            </lightning:layoutItem>
+            <lightning:layoutItem size="2" >
+                <ui:outputText value="{!v.remainingTracks}" />
+            </lightning:layoutItem>
+            <lightning:layoutItem size="2" >
+            </lightning:layoutItem>
+        </lightning:layout>
+        
+        <br/>
+        
+        <lightning:layout >
+            <lightning:layoutItem size="1" >
+            </lightning:layoutItem>
+            <lightning:layoutItem size="2" >
+                <ui:outputText value="Mix Length(m)" />
+            </lightning:layoutItem>
+            <lightning:layoutItem size="2" >
+                <ui:outputText value="{!v.mixLength}" />
+            </lightning:layoutItem>
+            <lightning:layoutItem size="1" >
+            </lightning:layoutItem>
+            <lightning:layoutItem size="2" >
+                <ui:outputText value="Remaining Mix Length(m)" />
+            </lightning:layoutItem>
+            <lightning:layoutItem size="2" >
+                <ui:outputText value="{!v.remainingMixLength}" />
+            </lightning:layoutItem>
+            <lightning:layoutItem size="2" >
+            </lightning:layoutItem>
+        </lightning:layout>
+        <!--div for Mix Summary ..-->
+        
+        <br/>
+        
+        <!--component calling ..-->
+        <c:CamillasCustomVinylSongsComp trackCount="{!v.trackCount}"
+                                        remainingTracks="{!v.remainingTracks}"
+                                        mixLength="{!v.mixLength}"
+                                        remainingMixLength="{!v.remainingMixLength}"
+                                        recordId="{!v.recordId}" />
+        <!--component calling ..-->
+        <br/><br/><br/>
+        <!--buttons ..-->
+        <div class="slds-align_absolute-center">
+            <lightning:button class="slds-button slds-button_brand"
+                              label="save"
+                              disabled="{!if(v.mixRecord.Customer__c==''
+                                        ||v.mixRecord.Customer__c==null, true, false)}"
+                              onclick="{!c.save}"/>
+            <lightning:button class="slds-button slds-button_outline-brand" label="cancel" onclick="{!c.cancel}"/>
+        </div>
+        <!--buttons ..-->
+        
+    </form>
+</aura:component>

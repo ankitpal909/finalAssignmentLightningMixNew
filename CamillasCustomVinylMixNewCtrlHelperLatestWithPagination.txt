@@ -1,0 +1,200 @@
+({
+    //initializer function ..
+    doInitAction : function(component, event, helper) {
+        component.set("v.songRecordDataCloumnsList", [
+            {label : "Name", fieldName : "songName", type : "text"},
+            {label : "Genre", fieldName : "songGenre", type : "text"},
+            {label : "Length(m)", fieldName : "songLength", type : "number"}            
+        ]);
+        var action = component.get("c.getSongRecord");            
+        action.setCallback(this, function(response){            
+            var state = response.getState();            
+            if(state=="SUCCESS"){            
+                var resultSongRecordData = response.getReturnValue();            
+                for(var i=0; i<resultSongRecordData.length; i++){                    
+                    var songNameValue = resultSongRecordData[i]['Name'];
+                    var songGenreValue = resultSongRecordData[i]['Genre__c'];
+                    var songLengthValue = resultSongRecordData[i]['Length_m__c'];
+                    
+                    resultSongRecordData[i].songName = songNameValue;
+                    resultSongRecordData[i].songGenre = songGenreValue;
+                    resultSongRecordData[i].songLength = songLengthValue;
+                }
+                component.set("v.songRecordData", resultSongRecordData);
+            }
+        });        
+        $A.enqueueAction(action);
+        
+        var actionOne = component.get("c.getGenreList");
+        var songGenreList = [];
+        actionOne.setCallback(this, function(response){
+            var state = response.getState();
+            if(state=="SUCCESS"){
+                var picklistValues = response.getReturnValue();
+                for(var i=0; i<picklistValues.length; i++){
+                    songGenreList.push(JSON.parse(JSON.stringify(picklistValues[i].strValue)));
+                }
+                component.set("v.picklistValues", songGenreList);
+            }
+        });
+        $A.enqueueAction(actionOne);
+        
+        var pageSize = component.get("v.pageSize");
+        var actionTwo = component.get("c.getSongRecord");
+        actionTwo.setCallback(this, function(response){
+            var state = response.getState();
+            if ( state === "SUCCESS"){
+                component.set('v.songList', response.getReturnValue());
+                component.set("v.totalSize", component.get("v.songList").length);
+                component.set("v.start",0);
+                component.set("v.end",pageSize-1);
+                
+                var paginationList = [];
+                for(var i=0; i< pageSize; i++){
+                    paginationList.push(response.getReturnValue()[i]);    
+                }
+                
+                component.set('v.paginationList', paginationList);
+            }
+        });
+        $A.enqueueAction(actionTwo);
+    },
+    
+    //next function ..
+    next : function(component, event, helper) 
+    {
+        var songList = component.get("v.songList");
+        var end = component.get("v.end");
+        var start = component.get("v.start");
+        var pageSize = component.get("v.pageSize");
+        var paginationList = [];
+        
+        var counter = 0;
+        for(var i=end+1; i<end+pageSize+1; i++)
+        {
+            if(songList.length > end)
+            {
+                paginationList.push(songList[i]);
+                counter ++ ;
+            }
+        }
+        start = start + counter;
+        end = end + counter;
+        
+        component.set("v.start",start);
+        component.set("v.end",end);
+        
+        component.set('v.paginationList', paginationList);
+    },
+    
+    //previous function ..
+    previous : function(component, event, helper) 
+    {
+        var songList = component.get("v.songList");
+        var end = component.get("v.end");
+        var start = component.get("v.start");
+        var pageSize = component.get("v.pageSize");
+        var paginationList = [];
+        
+        var counter = 0;
+        for(var i= start-pageSize; i < start ; i++)
+        {
+            if(i > -1)
+            {
+                paginationList.push(songList[i]);
+                counter ++;
+            }
+            else
+            {
+                start++;
+            }
+        }
+        start = start - counter;
+        end = end - counter;
+        
+        component.set("v.start",start);
+        component.set("v.end",end);
+        
+        component.set('v.paginationList', paginationList);
+    },
+    
+    //function for getting songs based on genre being selected ..
+    songsBasedOnGenre : function(component, event, helper){
+        var pageSize = component.get("v.pageSize");
+        var selectedPicklistValue = component.find("idPicklist").get("v.value");
+        var action = component.get("c.getSongsBasedOnGenre");     
+        action.setParams({
+            "genre" : selectedPicklistValue
+        });
+        action.setCallback(this, function(response){
+            var state = response.getState();
+            if(state=="SUCCESS"){
+                var resultSongRecordData = response.getReturnValue();            
+                for(var i=0; i<resultSongRecordData.length; i++){                    
+                    var songNameValue = resultSongRecordData[i]['Name'];
+                    var songGenreValue = resultSongRecordData[i]['Genre__c'];
+                    var songLengthValue = resultSongRecordData[i]['Length_m__c'];
+                    
+                    resultSongRecordData[i].songName = songNameValue;
+                    resultSongRecordData[i].songGenre = songGenreValue;
+                    resultSongRecordData[i].songLength = songLengthValue;
+                }
+                component.set("v.songRecordData", resultSongRecordData);
+                component.set('v.songList', response.getReturnValue());
+                component.set("v.totalSize", component.get("v.songList").length);
+                component.set("v.start",0);
+                component.set("v.end",pageSize-1);
+                
+                var paginationList = [];
+                for(var i=0; i< pageSize; i++){
+                    paginationList.push(response.getReturnValue()[i]);    
+                }
+                
+                component.set('v.paginationList', paginationList);             
+            }
+        });
+        $A.enqueueAction(action);
+    },    
+    
+    //function for selecting checked rows ..
+    songCheckboxSelected : function(component, event, helper){
+        //variables ..
+        var songCheckboxSelectedValues = event.getParam('selectedRows');
+        /*var action = component.get("c.summaryValues");
+        action.setParams({
+            "songCheckboxSelectedValues"  : songCheckboxSelectedValues          
+        });*/
+        var componentEventValue = component.getEvent("componentEvent");
+        
+        var songCheckboxSelectedList = [];
+        var mixLengthValue = 0.0;
+        var remainingTracksValue = 20;
+        var remainingMixLengthValue = 90;
+        
+        for (var i=0; i<songCheckboxSelectedValues.length; i++){
+            songCheckboxSelectedList.push(songCheckboxSelectedValues[i]);
+            mixLengthValue += songCheckboxSelectedList[i].songLength;
+            remainingTracksValue = 20-songCheckboxSelectedList.length;
+            remainingMixLengthValue = 90-mixLengthValue;
+        }        
+        component.set("v.trackCount", songCheckboxSelectedList.length);
+        component.set("v.mixLength", mixLengthValue);
+        component.set("v.remainingTracks", remainingTracksValue);
+        component.set("v.remainingMixLength", remainingMixLengthValue);
+        
+        var trackCountPreviousValue = component.get("v.trackCountPrevious");
+        var remainingTracksPreviousValue = component.get("v.remainingTracksPrevious");
+        var mixLengthPreviousValue = component.get("v.mixLengthPrevious");
+        var remainingMixLengthPreviousValue = component.get("v.remainingMixLengthPrevious");
+        
+        componentEventValue.setParams({
+            "selectedSongsList" :   songCheckboxSelectedList          
+        });
+        
+        componentEventValue.fire();
+    },
+    
+    //function for seleted songs list ..
+    songCheckboxSelectedNew : function(component, event, helper){
+    },
+})

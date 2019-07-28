@@ -1,0 +1,88 @@
+({
+    //initializer function ..
+    doInitAction : function(component, event, helper) {
+        var pageReference = {
+            type: 'custom__objectPage',
+            attributes: {
+                objectApiName: 'Mix__c',
+                actionName: 'list'
+            },
+            state: {
+                filterName: "Recent"
+            }
+        };
+        var action = component.get("c.getMixRecord");
+        action.setParams({
+            "mixRecordId" : component.get("v.recordId")
+        });
+        action.setCallback(this, function(response){
+            var state = response.getState();
+            if(state=="SUCCESS"){
+                component.set("v.mixRecord", response.getReturnValue());
+            }
+        });
+        $A.enqueueAction(action);
+    },
+    
+    //fucntion for event handling ..
+    componentEventFired : function(component, event, helper) {
+        var componentEventValue = event.getParam("selectedSongsList");
+        component.set("v.selectedSongsInMixBuilderList", componentEventValue);
+    },
+    
+    //cancel function ..
+    cancel : function(component, event, helper){
+        var idNavigationValue = component.find("idNavigation");
+        // Uses the pageReference definition in the init handler
+        var pageReferenceValue = component.get("v.pageReference");
+        event.preventDefault();
+        idNavigationValue.navigate(pageReferenceValue);
+    },
+    
+    //save function ..
+    /*save : function(component, event, helper) {
+        var selectedSongsInMixBuilderListValues = component.get("v.selectedSongsInMixBuilderList");
+        var selectedSongsInMixBuilderListValuesString = JSON.stringify(selectedSongsInMixBuilderListValues);       
+        var mixRecordName = component.find("auraIdName").get("v.value");
+        var mixRecordCustomer = component.find("auraIdCustomer").get("v.value");
+        var mix = component.get("v.mixRecord");
+        var action = component.get("c.saving");
+        action.setParams({
+            "songsList" : selectedSongsInMixBuilderListValuesString,
+            "mixRecordName" : mix.Name,
+            "mixRecordCustomer" : mix.Customer__c
+        });
+        action.setParams({
+            "songsList" : selectedSongsInMixBuilderListValuesString,
+            "mixRecordName" : mix
+        });
+        action.setCallback(this, function(response){
+            var state = response.getState();
+            console.log("state :" + state);
+            var mix = response.getReturnValue();
+            console.log("mix :" + mix.Id);
+            console.log("mix :" + mix.Name);
+        });
+        $A.enqueueAction(action);
+    },*/
+    
+    //save function ..
+    save : function(component,event,helper){
+        var selectedSongsInMixBuilderListValues = component.get("v.selectedSongsInMixBuilderList");
+        var selectedSongsInMixBuilderListValuesString = JSON.stringify(selectedSongsInMixBuilderListValues);
+        var actions = component.get("c.saving");
+        actions.setParams({
+            "songsList" : selectedSongsInMixBuilderListValuesString,
+            "mixRecord" : component.get("v.mixRecord")    
+        });
+        actions.setCallback(this, function(response){
+            var state = response.getState();
+            console.log("state :" + state);
+            var mix = response.getReturnValue();
+            console.log("mix :" + mix.Id);
+            console.log("mix :" + mix.Name);
+            console.log("mix :" + mix.Customer__c);
+        });
+        $A.enqueueAction(actions);
+    },
+})

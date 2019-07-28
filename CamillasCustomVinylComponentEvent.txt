@@ -1,0 +1,4 @@
+<aura:event type="COMPONENT" description="event for passing selected songs to the parent component" >
+    <aura:attribute name="selectedSongsList"
+                    type="SOng__c[]" />
+</aura:event>

@@ -1,0 +1,21 @@
+({
+    //initializer function ..
+    doInitAction : function(component, event, helper) {
+        helper.doInitAction(component, event, helper);
+    },
+    
+    //fucntion for event handling ..
+    componentEventFired : function(component, event, helper) {
+        helper.componentEventFired(component, event, helper);
+    },
+    
+    //cancel function ..
+    cancel : function(component, event, helper) {
+        helper.cancel(component, event, helper);
+    },
+    
+    //save function ..
+    save : function(component, event, helper) {
+        helper.save(component, event, helper);
+    },
+})

@@ -1,0 +1,302 @@
+public class CamillasCustomVinylMixNewCtrl {    
+    
+    //function for getting Mix record ..
+    @AuraEnabled
+    public static Mix__c getMixRecord(Id mixRecordId){
+        Mix__c mixRecord;
+        if(mixRecordId!=null){
+            mixRecord = [SELECT Id, Name, Customer__c, Customer__r.Name FROM Mix__c WHERE Id =: mixRecordId];
+        }
+        else{
+            mixRecord = new Mix__c();
+        }
+        return mixRecord;
+    }
+    
+    //wrapper class ..
+    public class wrapperClass{ 
+        @AuraEnabled Song__c song{get;set;}
+        @AuraEnabled public boolean selected{get;set;}
+        public wrapperClass(Song__c song, boolean selected){
+            this.song = song;
+            this.selected  = selected;
+        }
+    }
+    
+    //function for song's list with added attributes ..
+    @AuraEnabled
+    public static List<wrapperClass> wrapperClassSongs(String id, String wrapSongs){
+        Map<Id, Song__c> idSongMap = new Map<Id, Song__c>();
+        List <wrapperClass> wrapSongsList  = new List <wrapperClass>();
+        List<wrapperClass> wrapperSongs = (List<wrapperClass>)System.JSON.deserialize(wrapSongs, List<wrapperClass>.class);
+        for(wrapperClass wrapperSongsValue : wrapperSongs){
+            if(wrapperSongsValue.selected){
+                idSongMap.put(wrapperSongsValue.song.Id, wrapperSongsValue.song);
+            }
+        }
+        
+        List<Track__c> trackList = new List<Track__c>();
+        Map<Id, Track__c> idTrackMap = new Map<Id, Track__c>();
+        if(id==null){
+            List<Song__c> songList = [SELECT Id, Name, Genre__c, Length_m__c, Track_Count__c, Track_Licenses__c FROM Song__c];
+            for(Song__c songListValue : songList){
+                if(idSongMap.containsKey(songListValue.Id)){
+                    wrapSongsList.add(new wrapperClass(songListValue, true));
+                }
+                else{
+                    wrapSongsList.add(new wrapperClass(songListValue, false));
+                }
+            }
+            return wrapSongsList;
+        }
+        else{
+            trackList = [SELECT Id, Song__c, Mix__c FROM Track__c WHERE Mix__c =: id];
+            List<Song__c> songList = [SELECT Id, Name, Genre__c, Length_m__c, Track_Count__c, Track_Licenses__c FROM Song__c];
+            for(Track__c trackListValue : trackList){
+                idTrackMap.put(trackListValue.Song__c, trackListValue);
+            }
+            for(Song__c songListValue : songList){
+                if(idTrackMap.containsKey(songListValue.Id)){
+                    wrapSongsList.add(new wrapperClass(songListValue, true));                    
+                }
+                else if(idSongMap.containsKey(songListValue.Id)){
+                    wrapSongsList.add(new wrapperClass(songListValue, true));
+                }
+                else{
+                    wrapSongsList.add(new wrapperClass(songListValue, false));                    
+                }
+            }
+        }
+        return wrapSongsList;
+    }
+    
+    //function for list of selected songs ..
+    @AuraEnabled
+    public static List<wrapperClass> selectedSongsList(String songs){
+        List<wrapperClass> selectedSongsList = new List<wrapperClass>();
+        if(!string.isBlank(songs)){
+            List<wrapperClass> wrapperSongs = (List<wrapperClass>)System.JSON.deserialize(songs, List<wrapperClass>.class);
+            for(wrapperClass wrapperSongsValue : wrapperSongs){
+                selectedSongsList.add(new wrapperClass(wrapperSongsValue.song, wrapperSongsValue.selected));
+            }
+        }
+        return selectedSongsList;
+    }    
+    
+    //wrapper class for picklist values ..
+    public class picklistWrapper {
+        @AuraEnabled
+        public String strValue {get;set;}
+        @AuraEnabled
+        public String strLabel {get;set;}
+        
+        public picklistWrapper(String strValue, String strLabel) {
+            this.strValue = strValue;
+            this.strLabel = strLabel;
+        }
+    }
+    
+    //function for picklist values ..
+    @AuraEnabled
+    public static List<picklistWrapper> getGenreList(){
+        List <picklistWrapper> genreOptionList = new List<picklistWrapper>();        
+        Schema.DescribeFieldResult genreDescribeFieldResult = Song__c.Genre__c.getDescribe();
+        List<Schema.PicklistEntry> genrePicklist = genreDescribeFieldResult.getPicklistValues();        
+        for( Schema.PicklistEntry genrePicklistValues : genrePicklist){
+            genreOptionList.add(new picklistWrapper(genrePicklistValues.getLabel(), genrePicklistValues.getValue()));
+        }       
+        return genreOptionList;
+    }
+    
+    /*    
+//function for getting songs based on genre being selected ..
+@AuraEnabled
+public static List<wrapperClass> getSongsBasedOnGenre(String genre, String id, String wrapSongs){
+Map<Id, Song__c> idSongMap = new Map<Id, Song__c>();
+List <wrapperClass> wrapSongsList  = new List <wrapperClass>();
+List<wrapperClass> wrapperSongs = (List<wrapperClass>)System.JSON.deserialize(wrapSongs, List<wrapperClass>.class);
+for(wrapperClass wrapperSongsValue : wrapperSongs){
+if(wrapperSongsValue.selected){
+idSongMap.put(wrapperSongsValue.song.Id, wrapperSongsValue.song);
+}
+}
+List<Track__c> trackList = new List<Track__c>();
+Map<Id, Track__c> idTrackMap = new Map<Id, Track__c>();
+if(genre=='--Any Genre--'){
+trackList = [SELECT Id, Song__c, Mix__c FROM Track__c WHERE Mix__c =: id];
+List<Song__c> songList = [SELECT Id, Name, Genre__c, Length_m__c, Track_Count__c, Track_Licenses__c FROM Song__c];
+for(Track__c trackListValue : trackList){
+idTrackMap.put(trackListValue.Song__c, trackListValue);
+}
+for(Song__c songListValue : songList){
+if(idTrackMap.containsKey(songListValue.Id)){
+wrapSongsList.add(new wrapperClass(songListValue, true));                    
+}
+else if(idSongMap.containsKey(songListValue.Id)){
+wrapSongsList.add(new wrapperClass(songListValue, true));
+}
+else{
+wrapSongsList.add(new wrapperClass(songListValue, false));                    
+}
+}
+return wrapSongsList;
+}
+else{
+trackList = [SELECT Id, Song__c, Mix__c FROM Track__c WHERE Mix__c =: id];
+List<Song__c> songList = [SELECT Id, Name, Genre__c, Length_m__c, Track_Count__c, Track_Licenses__c FROM Song__c WHERE Genre__c =:genre];
+for(Track__c trackListValue : trackList){
+idTrackMap.put(trackListValue.Song__c, trackListValue);
+}
+for(Song__c songListValue : songList){
+if(idTrackMap.containsKey(songListValue.Id)){
+wrapSongsList.add(new wrapperClass(songListValue, true));                    
+}
+else if(idSongMap.containsKey(songListValue.Id)){
+wrapSongsList.add(new wrapperClass(songListValue, true));
+}
+else{
+wrapSongsList.add(new wrapperClass(songListValue, false));                    
+}
+}
+return wrapSongsList;  
+}
+}
+*/
+    
+    //function for getting songs based on genre being selected ..
+    @AuraEnabled
+    public static List<wrapperClass> getSongsBasedOnGenreTwo(String wrapSongs){
+        List <wrapperClass> wrapSongsList  = new List <wrapperClass>();
+        List<wrapperClass> wrapperSongs = (List<wrapperClass>)System.JSON.deserialize(wrapSongs, List<wrapperClass>.class);
+        for(wrapperClass wrapperSongsValue : wrapperSongs){
+            wrapSongsList.add(new wrapperClass(wrapperSongsValue.song, wrapperSongsValue.selected));
+        }
+        return wrapSongsList;
+    }
+    
+    //function for save ..
+    @AuraEnabled
+    public static String saving(List<Song__c> songsList, Mix__c mixRecord){
+        if(mixRecord.Name!=null && mixRecord.Customer__c!=null){
+            List<Track__c> trackList = new List<Track__c>();
+            Map<Id, Song__c> idSongMap = new Map<Id, Song__c>();
+            String saveResult = 'Yes';
+            Decimal mixLengthValue=0;
+            mixRecord.Customer__r = null;
+            mixRecord.Customer__c = mixRecord.Customer__c;
+            for(Song__c songsListValue : songsList){
+                mixLengthValue += songsListValue.Length_m__c;
+                if(songsListValue.Track_Count__c==songsListValue.Track_Licenses__c){
+                    saveResult = String.valueOf(songsListValue.Name);
+                    return saveResult;
+                }
+                else if(songsList.size()>20){
+                    saveResult = '1';
+                    return saveResult;                
+                }
+                else if(mixLengthValue>90){
+                    saveResult = '2';
+                    return saveResult;                
+                }
+                else{
+                    idSongMap.put(songsListValue.Id, songsListValue);
+                }
+            }
+            if(saveResult == 'Yes'){
+                if(mixRecord.Id==null){
+                    Mix__c mix = new Mix__c();
+                    try{
+                        mix.Name = mixRecord.Name;
+                        mix.Customer__c = mixRecord.Customer__c;
+                        insert mix;
+                    }catch(Exception e){
+                        System.debug('error :' + e.getMessage());
+                        saveResult = '4';
+                        return saveResult;
+                    }
+                    for(Song__c songsListValue : songsList){
+                        if(idSongMap.containsKey(songsListValue.Id)){
+                            trackList.add(new Track__c(Song__c=songsListValue.Id, Mix__c=mix.Id));                    
+                        }
+                    }
+                    try{
+                        insert trackList;
+                    }catch(Exception e){
+                        System.debug('error :' + e.getMessage());
+                    }
+                    saveResult = mix.Id;
+                }
+                else{
+                    trackList = [SELECT Id From Track__c WHERE Mix__c=:mixRecord.Id];
+                    try{
+                        delete trackList;
+                    }catch(Exception e){
+                        System.debug('error :' + e.getMessage());
+                    }
+                    List<Track__c> trackListNew = new List<Track__c>();
+                    for(Song__c songsListValue : songsList){
+                        if(idSongMap.containsKey(songsListValue.Id)){
+                            trackListNew.add(new Track__c(Song__c=songsListValue.Id, Mix__c=mixRecord.Id));                   
+                        }
+                    }
+                    try{
+                        insert trackListNew;
+                        update mixRecord;
+                    }catch(Exception e){
+                        System.debug('error :' + e.getMessage());
+                    }
+                    saveResult = mixRecord.Id;
+                }
+            }
+            return saveResult;
+        }
+        else{
+            String saveResult = '5';
+            return saveResult;
+        }
+    }
+    
+    //function for cancel ..
+    @AuraEnabled
+    public static String cancelling(Mix__c mixRecord){
+        String link;
+        if(mixRecord.Id!=null){
+            link='https://ankit-pal-dev-ed.lightning.force.com/lightning/r/Mix__c/'+ mixRecord.Id + '/view';
+        }
+        else{
+            link='https://ankit-pal-dev-ed.lightning.force.com/lightning/o/Mix__c/list?filterName=Recent';            
+        }
+        return link;     
+    }
+    
+    /*
+//function for setting Mix Length value ..
+@AuraEnabled
+public static Decimal mixLengthValue(String songs){
+System.debug('wrapperSongsValue :');
+Decimal mixLength = 0.0;
+List<wrapperClass> wrapperSongs = (List<wrapperClass>)System.JSON.deserialize(songs, List<wrapperClass>.class);
+for(wrapperClass wrapperSongsValue : wrapperSongs){
+if(wrapperSongsValue.selected){
+System.debug('wrapperSongsValue :' + wrapperSongsValue.song.Name);
+mixLength += wrapperSongsValue.song.Length_m__c;
+}
+}
+return mixLength;
+}
+
+
+//function for setting Track Count value ..
+@AuraEnabled
+public static Integer trackCountValue(String songs){
+Integer trackCount = 0;
+List<wrapperClass> wrapperSongs = (List<wrapperClass>)System.JSON.deserialize(songs, List<wrapperClass>.class);
+for(wrapperClass wrapperSongsValue : wrapperSongs){
+if(wrapperSongsValue.selected){
+trackCount++;
+}
+}
+return trackCount;
+}
+*/
+}

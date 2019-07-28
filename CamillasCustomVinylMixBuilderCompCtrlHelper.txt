@@ -1,0 +1,122 @@
+({
+    //initializer function ..
+    doInitAction : function(component, event, helper) {
+        var pageReference = {
+            type: 'custom__objectPage',
+            attributes: {
+                objectApiName: 'Mix__c',
+                actionName: 'list'
+            },
+            state: {
+                filterName: "Recent"
+            }
+        };
+        var action = component.get("c.getMixRecord");
+        action.setParams({
+            "mixRecordId" : component.get("v.recordId")
+        });
+        action.setCallback(this, function(response){
+            var state = response.getState();
+            if(state=="SUCCESS"){
+                component.set("v.mixRecord", response.getReturnValue());
+            }
+        });
+        $A.enqueueAction(action);
+    },
+    
+    //fucntion for event handling ..
+    componentEventFired : function(component, event, helper) {
+        var componentEventSongsValue = event.getParam("selectedSongsList");
+        component.set("v.selectedSongsInMixBuilderList", componentEventSongsValue);
+    },
+    
+    //cancel function ..
+    cancel : function(component, event, helper){
+        var action = component.get("c.cancelling");
+        action.setParams({
+            "mixRecord" : component.get("v.mixRecord")
+        });
+        action.setCallback(this, function(response){
+            var state = response.getState();
+            if(state=="SUCCESS"){
+                var link = response.getReturnValue();
+                window.location.href = link;                
+            }
+        });
+        $A.enqueueAction(action);
+    },
+    
+    //save function ..
+    save : function(component,event,helper){
+        var toastEvent = $A.get("e.force:showToast");
+        component.find("auraIdName").showHelpMessageIfInvalid();
+        var selectedSongsInMixBuilderListValues = component.get("v.selectedSongsInMixBuilderList");
+        var errorValue = component.get("v.error");
+        var saveResultValue = '';
+        var action = component.get("c.saving");
+        action.setParams({
+            "songsList" : selectedSongsInMixBuilderListValues,
+            "mixRecord" : component.get("v.mixRecord")
+        });
+        action.setCallback(this, function(response){
+            var state = response.getState();
+            if(state=="SUCCESS"){
+                saveResultValue = response.getReturnValue();
+                console.log("saveResultValue :" + saveResultValue);
+                for(var i=0; i<selectedSongsInMixBuilderListValues.length; i++){
+                    if(saveResultValue==selectedSongsInMixBuilderListValues[i].Name){
+                        saveResultValue = '3';
+                        errorValue = 'Track License limit exceeded for ' +  selectedSongsInMixBuilderListValues[i].Name +' ..';
+                        toastEvent.setParams({
+                            title : 'oops!',
+                            "message": errorValue
+                        });
+                        toastEvent.fire();                        
+                    }
+                }
+                if(saveResultValue=='1'){
+                    errorValue = 'Tracks cannot be more than 20 ..';
+                    toastEvent.setParams({
+                        title : 'oops!',
+                        "message": errorValue
+                    });
+                    toastEvent.fire();                    
+                }
+                else if(saveResultValue=='2'){
+                    errorValue = 'Mix length cannot be more than 90 ..';
+                    toastEvent.setParams({
+                        title : 'oops!',
+                        "message": errorValue
+                    });
+                    toastEvent.fire();
+                }
+                    else if(saveResultValue=='4'){
+                        errorValue = 'Not a valid Customer ..';
+                        toastEvent.setParams({
+                            title : 'oops!',
+                            "message": errorValue
+                        });
+                        toastEvent.fire();                        
+                    }
+                    else if(saveResultValue=='5'){
+                        errorValue = 'Required fields missing ..';
+                        toastEvent.setParams({
+                            title : 'oops!',
+                            "message": errorValue
+                        });
+                        toastEvent.fire();                        
+                    }
+                        else if(saveResultValue!='1' && saveResultValue!='2' && saveResultValue!='3' && saveResultValue!='4' && saveResultValue!='5'){
+                            window.location.href = 'https://ankit-pal-dev-ed.lightning.force.com/lightning/r/Mix__c/' + saveResultValue + '/view';
+                            errorValue = 'Mix saved successfully ..';
+                            toastEvent.setParams({
+                                title : 'saved!',
+                                "message": errorValue
+                            });
+                            toastEvent.fire();
+                        }
+            }
+        });
+        $A.enqueueAction(action);
+    },
+})

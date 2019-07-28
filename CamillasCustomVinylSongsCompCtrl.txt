@@ -1,0 +1,26 @@
+({
+    //initializer function ..
+    doInitAction : function(component, event, helper) {
+        helper.doInitAction(component, event, helper);
+    },
+    
+    //next function ..
+    next : function(component, event, helper) {
+        helper.next(component, event, helper);
+    },
+    
+    //previous function ..
+    previous : function(component, event, helper) {
+        helper.previous(component, event, helper);
+    },
+    
+    //function for getting songs based on genre being selected ..
+    songsBasedOnGenre : function(component, event, helper) {
+        helper.songsBasedOnGenre(component, event, helper);
+    },
+    
+    //function for selecting checked rows ..
+    songCheckboxSelected : function(component, event, helper) {
+        helper.songCheckboxSelected(component, event, helper);
+    },
+})

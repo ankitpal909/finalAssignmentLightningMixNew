@@ -1,0 +1,73 @@
+//next function ..
+    next : function(component, event, helper){
+        var recordIdValue = component.get("v.recordId");
+        var counterValue = component.get("v.counter");
+        var pageSize = component.get("v.pageSize");
+        var end = component.get("v.end");
+        var wrapperSongListOnePageValue = [];
+        var wrapperSongListValue = component.get("v.wrapperSongList");
+        var wrapperSongListStringValue = JSON.stringify(wrapperSongListValue);		
+        var start = component.get("v.start");
+        var selectedPicklistValue = component.find("idPicklist").get("v.value");
+        var songsBasedOnGenreTempList = [];
+        if(selectedPicklistValue=='' || selectedPicklistValue=='--Any Genre--'){
+            var action = component.get("c.wrapperClassSongs");
+            action.setParams({
+                "id" :  recordIdValue,
+                "wrapSongs" : wrapperSongListStringValue          
+            });            
+            action.setCallback(this, function(response){
+                var state = response.getState();
+                if(state=="SUCCESS"){            
+                    component.set("v.wrapperSongList", response.getReturnValue());
+                    var wrapperSongListValue = component.get("v.wrapperSongList");
+                    component.set("v.totalSize", wrapperSongListValue.length);
+                    for(var i=end; i<end+pageSize; i++){
+                        if(i<wrapperSongListValue.length){
+                            wrapperSongListOnePageValue.push(wrapperSongListValue[i]);                        
+                        }
+                    }
+                    component.set("v.wrapperSongListOnePage", wrapperSongListOnePageValue);                    
+                }
+                start = start + counterValue;
+                end = end + counterValue;
+                
+                component.set("v.start", start);
+                component.set("v.end", end);
+                component.set("v.counter", counterValue);
+            });
+        }        
+        else{
+            var action = component.get("c.getSongsBasedOnGenreTwo");     
+            action.setParams({
+                "genre" : selectedPicklistValue,
+                "id" :  recordIdValue,
+                "wrapSongs" : wrapperSongListStringValue
+            });            
+            action.setCallback(this, function(response){
+                var state = response.getState();
+                if(state=="SUCCESS"){            
+                    component.set("v.wrapperSongList", response.getReturnValue());
+                    var wrapperSongListValue = component.get("v.wrapperSongList");
+                    component.set("v.totalSize", wrapperSongListValue.length);
+                    for(var i=0; i<wrapperSongListValue.length; i++){
+                        if(wrapperSongListValue[i].song.Genre__c==selectedPicklistValue)
+                            songsBasedOnGenreTempList.push(wrapperSongListValue[i]);                   
+                    }
+                    for(var i=end; i<end+pageSize; i++){
+                        if(i<songsBasedOnGenreTempList.length){
+                            wrapperSongListOnePageValue.push(songsBasedOnGenreTempList[i]);                       
+                        } 
+                    }
+                    component.set("v.wrapperSongListOnePage", wrapperSongListOnePageValue);
+                }
+                start = start + counterValue;
+                end = end + counterValue;
+                
+                component.set("v.start", start);
+                component.set("v.end", end);
+                component.set("v.counter", counterValue);             
+            });
+        }        
+        $A.enqueueAction(action);
+    },

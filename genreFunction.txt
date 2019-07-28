@@ -1,0 +1,50 @@
+//function for getting songs based on genre being selected ..
+    songsBasedOnGenre : function(component, event, helper){
+        var recordIdValue = component.get("v.recordId");
+        var counterValue = component.get("v.counter");
+        var pageSize = component.get("v.pageSize");
+        var end = component.get("v.end");
+        var wrapperSongListOnePageValue = [];
+        var wrapperSongListValue = component.get("v.wrapperSongList");
+        var wrapperSongListStringValue = JSON.stringify(wrapperSongListValue);
+        var start = component.get("v.start");
+        var selectedPicklistValue = component.find("idPicklist").get("v.value");
+        var songsBasedOnGenreTempList = [];
+        var action = component.get("c.getSongsBasedOnGenreTwo");
+        action.setParams({
+            "wrapSongs" : wrapperSongListStringValue
+        });
+        action.setCallback(this, function(response){
+            var state = response.getState();
+            if(state=="SUCCESS"){           
+                //component.set("v.wrapperSongList", response.getReturnValue());
+                wrapperSongListValue = response.getReturnValue();
+                component.set("v.totalSize", wrapperSongListValue.length);
+                if(selectedPicklistValue=='--Any Genre--'){
+                    for(var i=0; i<wrapperSongListValue.length; i++){
+                        songsBasedOnGenreTempList.push(wrapperSongListValue[i]);                   
+                    }                   
+                }
+                else{
+                    for(var i=0; i<wrapperSongListValue.length; i++){
+                        if(wrapperSongListValue[i].song.Genre__c==selectedPicklistValue)
+                            songsBasedOnGenreTempList.push(wrapperSongListValue[i]);                   
+                    }
+                }
+                component.set("v.totalSize", songsBasedOnGenreTempList.length);
+                for(var i=0; i<pageSize; i++){
+                    if(i<songsBasedOnGenreTempList.length){
+                        wrapperSongListOnePageValue.push(songsBasedOnGenreTempList[i]);
+                    }
+                }
+                component.set("v.wrapperSongListOnePage", wrapperSongListOnePageValue);
+            }
+            start = 0;
+            end = 3;
+            
+            component.set("v.start",start);
+            component.set("v.end",end);
+            //component.set("v.wrapperSongList", wrapperSongListValue);     
+        });
+        $A.enqueueAction(action);
+    },

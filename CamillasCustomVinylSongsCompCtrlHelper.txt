@@ -1,0 +1,280 @@
+({
+    //initializer function ..
+    doInitAction : function(component, event, helper) {        
+        var pageSizeValue = component.get("v.pageSize");
+        var componentEventValue = component.getEvent("componentEvent");
+        var nextDisabledValue;
+        var resultSongRecordDataListForOnePage = [];
+        var end = component.get("v.end");
+        
+        var actionOne = component.get("c.getGenreList");
+        var songGenreList = [];
+        actionOne.setCallback(this, function(response){
+            var state = response.getState();
+            if(state=="SUCCESS"){
+                var picklistValues = response.getReturnValue();
+                for(var i=0; i<picklistValues.length; i++){
+                    songGenreList.push(JSON.parse(JSON.stringify(picklistValues[i].strValue)));
+                }
+                component.set("v.picklistValues", songGenreList);
+            }
+        });
+        $A.enqueueAction(actionOne);
+        
+        var pageSize = component.get("v.pageSize");
+        var end = component.get("v.end");
+        var recordIdValue = component.get("v.recordId");
+        var wrapperSongListOnePageValue = [];
+        var wrapperSongListEventList = [];
+        var wrapperSongListValue = component.get("v.wrapperSongList");
+        var wrapperSongListStringValue = JSON.stringify(wrapperSongListValue);
+        var trackCountValue = component.get("v.trackCount");
+        var mixLengthValue = component.get("v.mixLength");
+        var remainingTracksValue = component.get("v.remainingTracks");
+        var remainingMixLengthValue = component.get("v.remainingMixLength");
+        var wrapperIdSongMapValue = new Map();
+        var actionTwo = component.get("c.wrapperClassSongs");
+        actionTwo.setParams({
+            "id" :  recordIdValue,
+            "wrapSongs" : wrapperSongListStringValue
+        });
+        actionTwo.setCallback(this, function(response){
+            var state = response.getState();
+            if(state=="SUCCESS"){
+                wrapperSongListValue = response.getReturnValue();
+                component.set("v.totalSize", wrapperSongListValue.length);
+                for(var i=0;i<wrapperSongListValue.length; i++){
+                    if(wrapperSongListValue[i].selected){
+                        trackCountValue++;
+                        mixLengthValue += wrapperSongListValue[i].song.Length_m__c;
+                    }
+                }
+                for(var i=0; i<end; i++){
+                    if(i<wrapperSongListValue.length){
+                        wrapperSongListOnePageValue.push(wrapperSongListValue[i]);                        
+                    }
+                }
+                if(recordIdValue==null){
+                    component.set("v.wrapperSongList", wrapperSongListValue);
+                    component.set("v.trackCount", 0);
+                    component.set("v.mixLength", 0);
+                    component.set("v.remainingTracks", 20);
+                    component.set("v.remainingMixLength", 90);
+                }
+                else{
+                    component.set("v.wrapperSongList", wrapperSongListValue);
+                    component.set("v.trackCount", trackCountValue);
+                    component.set("v.mixLength", mixLengthValue);
+                    remainingTracksValue = 20-trackCountValue;
+                    remainingMixLengthValue = 90-mixLengthValue;
+                    if(remainingTracksValue>=0){
+                        component.set("v.remainingTracks", remainingTracksValue);
+                    }
+                    else{
+                        component.set("v.remainingTracks", 0);                        
+                    }
+                    if(remainingMixLengthValue>=0){
+                        component.set("v.remainingMixLength", remainingMixLengthValue);
+                    }
+                    else{
+                        component.set("v.remainingMixLength", 0);                        
+                    }
+                }
+                component.set("v.wrapperSongListOnePage", wrapperSongListOnePageValue);
+                for(var i=0; i<wrapperSongListValue.length; i++){
+                    if(wrapperSongListValue[i].selected){
+                        wrapperSongListEventList.push(wrapperSongListValue[i].song);
+                    }
+                }
+                for(var i=0; i<wrapperSongListEventList.length; i++){                
+                    console.log("wrapperSongListEventList :" + wrapperSongListEventList[i].Name);
+                }
+                componentEventValue.setParams({
+                    "selectedSongsList" : wrapperSongListEventList
+                });
+                componentEventValue.fire();
+            }
+            //component.set("v.wrapperSongList", wrapperSongListValue);
+        });
+        $A.enqueueAction(actionTwo);
+    },
+    
+    //next function ..
+    next : function(component, event, helper){
+        var recordIdValue = component.get("v.recordId");
+        var counterValue = component.get("v.counter");
+        var pageSize = component.get("v.pageSize");
+        var end = component.get("v.end");
+        var wrapperSongListOnePageValue = [];
+        var wrapperSongListValue = component.get("v.wrapperSongList");
+        var wrapperSongListStringValue = JSON.stringify(wrapperSongListValue);		
+        var start = component.get("v.start");
+        var selectedPicklistValue = component.find("idPicklist").get("v.value");
+        var songsBasedOnGenreTempList = [];
+        if(selectedPicklistValue=='' || selectedPicklistValue=='--Any Genre--'){            
+            component.set("v.totalSize", wrapperSongListValue.length);
+            for(var i=end; i<end+pageSize; i++){
+                if(i<wrapperSongListValue.length){
+                    wrapperSongListOnePageValue.push(wrapperSongListValue[i]);                        
+                }
+            }
+            component.set("v.wrapperSongListOnePage", wrapperSongListOnePageValue);
+            start = start + counterValue;
+            end = end + counterValue;
+            
+            component.set("v.start", start);
+            component.set("v.end", end);
+            component.set("v.counter", counterValue);
+        }        
+        else{            
+            component.set("v.totalSize", wrapperSongListValue.length);
+            for(var i=0; i<wrapperSongListValue.length; i++){
+                if(wrapperSongListValue[i].song.Genre__c==selectedPicklistValue){
+                    songsBasedOnGenreTempList.push(wrapperSongListValue[i]);
+                }
+            }
+            for(var i=end; i<end+pageSize; i++){
+                if(i<songsBasedOnGenreTempList.length){
+                    wrapperSongListOnePageValue.push(songsBasedOnGenreTempList[i]);                       
+                } 
+            }
+            component.set("v.wrapperSongListOnePage", wrapperSongListOnePageValue);
+            start = start + counterValue;
+            end = end + counterValue;
+            
+            component.set("v.start", start);
+            component.set("v.end", end);
+            component.set("v.counter", counterValue);
+        }
+    },
+    
+    //previous function ..
+    previous : function(component, event, helper){
+        var recordIdValue = component.get("v.recordId");
+        var counterValue = component.get("v.counter");
+        var pageSize = component.get("v.pageSize");
+        var end = component.get("v.end");
+        var wrapperSongListOnePageValue = [];
+        var wrapperSongListValue = component.get("v.wrapperSongList");
+        var wrapperSongListStringValue = JSON.stringify(wrapperSongListValue);		
+        var start = component.get("v.start");
+        var selectedPicklistValue = component.find("idPicklist").get("v.value");
+        var songsBasedOnGenreTempList = [];
+        if(selectedPicklistValue=='' || selectedPicklistValue=='--Any Genre--'){
+            
+            component.set("v.totalSize", wrapperSongListValue.length);
+            for(var i= start-pageSize; i < start ; i++){
+                wrapperSongListOnePageValue.push(wrapperSongListValue[i]);                        
+            }
+            component.set("v.wrapperSongListOnePage", wrapperSongListOnePageValue);          
+            start = start - counterValue;
+            end = end - counterValue;
+            
+            component.set("v.start",start);
+            component.set("v.end",end);
+        }
+        else{
+            
+            component.set("v.totalSize", wrapperSongListValue.length);
+            for(var i=0; i<wrapperSongListValue.length; i++){
+                if(wrapperSongListValue[i].song.Genre__c==selectedPicklistValue)
+                    songsBasedOnGenreTempList.push(wrapperSongListValue[i]);                   
+            }
+            for(var i= start-pageSize; i < start ; i++){
+                if(i<songsBasedOnGenreTempList.length){
+                    wrapperSongListOnePageValue.push(songsBasedOnGenreTempList[i]);                       
+                } 
+            }
+            component.set("v.wrapperSongListOnePage", wrapperSongListOnePageValue);       
+            start = start - counterValue;
+            end = end - counterValue;
+            
+            component.set("v.start",start);
+            component.set("v.end",end);
+        }
+    },
+    
+    //function for getting songs based on genre being selected ..
+    songsBasedOnGenre : function(component, event, helper){
+        var recordIdValue = component.get("v.recordId");
+        var counterValue = component.get("v.counter");
+        var pageSize = component.get("v.pageSize");
+        var end = component.get("v.end");
+        var wrapperSongListOnePageValue = [];
+        var wrapperSongListValue = component.get("v.wrapperSongList");
+        var wrapperSongListStringValue = JSON.stringify(wrapperSongListValue);
+        var start = component.get("v.start");
+        var selectedPicklistValue = component.find("idPicklist").get("v.value");
+        var songsBasedOnGenreTempList = [];
+        component.set("v.totalSize", wrapperSongListValue.length);
+        if(selectedPicklistValue=='--Any Genre--'){
+            for(var i=0; i<wrapperSongListValue.length; i++){
+                songsBasedOnGenreTempList.push(wrapperSongListValue[i]);                   
+            }                   
+        }
+        else{
+            for(var i=0; i<wrapperSongListValue.length; i++){
+                if(wrapperSongListValue[i].song.Genre__c==selectedPicklistValue)
+                    songsBasedOnGenreTempList.push(wrapperSongListValue[i]);                 
+            }
+        }
+        component.set("v.totalSize", songsBasedOnGenreTempList.length);
+        for(var i=0; i<pageSize; i++){
+            if(i<songsBasedOnGenreTempList.length){
+                wrapperSongListOnePageValue.push(songsBasedOnGenreTempList[i]);
+            }
+        }
+        component.set("v.wrapperSongListOnePage", wrapperSongListOnePageValue);
+        start = 0;
+        end = 3;
+        
+        component.set("v.start",start);
+        component.set("v.end",end);
+    },    
+    
+    //function for selecting checked rows ..
+    songCheckboxSelected : function(component, event, helper){
+        //variables ..
+        var componentEventValue = component.getEvent("componentEvent");
+        var end = component.get("v.end");
+        var trackCountValue = 0;
+        var mixLengthValue = 0;
+        var remainingTracksValue = 20;
+        var remainingMixLengthValue = 90;
+        var wrapperSongListValue = component.get("v.wrapperSongList");
+        var wrapperSongListEventList = [];
+        
+        for(var i=0; i<wrapperSongListValue.length; i++){
+            if(wrapperSongListValue[i].selected){
+                trackCountValue++;
+                mixLengthValue += wrapperSongListValue[i].song.Length_m__c;
+            }
+        }
+        component.set("v.wrapperSongList", wrapperSongListValue);
+        component.set("v.trackCount", trackCountValue);
+        component.set("v.mixLength", mixLengthValue);
+        remainingTracksValue = 20-trackCountValue;
+        remainingMixLengthValue = 90-mixLengthValue;
+        if(remainingTracksValue>=0){
+            component.set("v.remainingTracks", remainingTracksValue);
+        }
+        else{
+            component.set("v.remainingTracks", 0);                        
+        }
+        if(remainingMixLengthValue>=0){
+            component.set("v.remainingMixLength", remainingMixLengthValue);
+        }
+        else{
+            component.set("v.remainingMixLength", 0);                        
+        }
+        for(var i=0; i<wrapperSongListValue.length; i++){
+            if(wrapperSongListValue[i].selected){
+                wrapperSongListEventList.push(wrapperSongListValue[i].song);
+            }
+        }
+        componentEventValue.setParams({
+            "selectedSongsList" : wrapperSongListEventList
+        });
+        componentEventValue.fire();
+    },
+})

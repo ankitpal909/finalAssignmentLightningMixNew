@@ -1,0 +1,96 @@
+public class CamillasCustomVinylMixNewCtrl {
+    //function for getting Mix record ..
+    @AuraEnabled
+    public static Mix__c getMixRecord(Id mixRecordId){
+        Mix__c mixRecord;
+        if(mixRecordId!=null){
+            mixRecord = [SELECT Name, Customer__c FROM Mix__c WHERE Id =: mixRecordId];
+        }
+        else{
+            mixRecord = new Mix__c();
+        }
+        return mixRecord;
+    }
+    
+    //function for getting Songs ..
+    @AuraEnabled
+    public static List<Song__c> getSongRecord(){
+        List<Song__c> songRecord;
+        songRecord = [SELECT Id, Name, Genre__c, Length_m__c, Track_Count__c, Track_Licenses__c FROM Song__c];
+        return songRecord;
+    }
+    
+    //wrapper class for picklist values ..
+    public class picklistWrapper {
+        @AuraEnabled
+        public String strValue {get;set;}
+        @AuraEnabled
+        public String strLabel {get;set;}
+        
+        public picklistWrapper(String strValue, String strLabel) {
+            this.strValue = strValue;
+            this.strLabel = strLabel;
+        }
+    }
+    
+    //function for picklist values ..
+    @AuraEnabled
+    public static List<picklistWrapper> getGenreList(){
+        List <picklistWrapper> genreOptionList = new List<picklistWrapper>();        
+        Schema.DescribeFieldResult genreDescribeFieldResult = Song__c.Genre__c.getDescribe();
+        List<Schema.PicklistEntry> genrePicklist = genreDescribeFieldResult.getPicklistValues();        
+        for( Schema.PicklistEntry genrePicklistValues : genrePicklist){
+            genreOptionList.add(new picklistWrapper(genrePicklistValues.getLabel(), genrePicklistValues.getValue()));
+        }       
+        return genreOptionList;
+    }
+    
+    //function for getting songs based on genre being selected ..
+    @AuraEnabled
+    public static List<Song__c> getSongsBasedOnGenre(String genre){
+        List<Song__c> songRecord = new List<Song__c>();
+        if(genre=='--Any Genre--'){
+            songRecord = [SELECT Id, Name, Genre__c, Length_m__c, Track_Count__c, Track_Licenses__c FROM Song__c];         
+        }
+        else{
+            songRecord = [SELECT Id, Name, Genre__c, Length_m__c, Track_Count__c, Track_Licenses__c FROM Song__c WHERE Genre__c =: genre];
+        }
+        return songRecord;
+    }    
+    
+    //function for save ..
+    @AuraEnabled
+    public static String saving(List<Song__c> songsList, Mix__c mixRecord){
+        List<Track__c> trackList = new List<Track__c>();
+        mixRecord.Customer__r = null;
+        mixRecord.Customer__c = mixRecord.Customer__c;
+        for(Song__c songsListValues : songsList){
+            if(songsListValues.Track_Count__c==songsListValues.Track_Licenses__c){
+                return ((String)'track license limit reached for ' + songsListValues);
+            }
+            else{
+                Track__c trackRecord = new Track__c();
+                trackRecord.Song__c = songsListValues.Id;
+                trackList.add(trackRecord);
+            }
+        }
+        if(trackList!=null){
+            insert mixRecord;
+            for(Track__c trackListValues : trackList){
+                trackListValues.Mix__c = mixRecord.Id;
+            }
+            insert trackList;
+            return 'saved record ..';
+        }
+        else{
+            return ((String)'track license limit reached for ');
+        }
+    }
+    
+    //function for setting summary values ..
+    @AuraEnabled
+    public static void summaryValues(List<Song__c> songCheckboxSelectedValues){
+        Map<Song__c, String> songStringMap = new Map<Song__c, String>();
+        for(Song__c songCheckboxSelectedIteratedValues : songCheckboxSelectedValues){}
+    }
+}

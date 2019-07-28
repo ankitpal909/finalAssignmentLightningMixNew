@@ -1,0 +1,75 @@
+<aura:component controller="CamillasCustomVinylMixNewCtrl">
+    
+    <!--attributes ..-->    
+    <aura:attribute name="trackCount" type="Integer" default='0' />
+    <aura:attribute name="remainingTracks" type="Integer" default='20' />
+    <aura:attribute name="mixLength" type="decimal" default='0.0' />
+    <aura:attribute name="remainingMixLength" type="decimal" default='90.0' />
+    <aura:attribute name="songRecordData" type="Object" />
+    <aura:attribute name="songRecordDataCloumnsList" type="List" />
+    <aura:attribute name="picklistValues" type="List" />
+    <aura:attribute name="mixRecordName" type="String" />
+    <aura:attribute name="mixRecordCustomer" type="String" />
+    <aura:attribute name="songList" type="Song__c[]" />
+    <aura:attribute name="paginationList" type="Song__c[]"/>
+    <aura:attribute name="pageSize" type="Integer" default="5"/>
+    <aura:attribute name="totalSize" type="Integer"/>
+    <aura:attribute name="start" type="Integer" />
+    <aura:attribute name="end" type="Integer"/>
+    <!--attributes ..-->
+    
+    <!--event registration ..-->
+    <aura:registerEvent name="componentEvent" type="c:componentEvent" />
+    <!--event registration ..-->    
+    
+    <!--calling doInitAction method ..--> 
+    <aura:handler name="init" value="{!this}" action="{!c.doInitAction}" />
+    <!--calling doInitAction method ..--> 
+    
+    <!--div for Songs ..-->
+    <lightning:layout class="slds-builder-toolbar">
+        <h1 class="slds-text-heading--small">Songs</h1>
+    </lightning:layout>
+    <br/>
+    <!--picklist ..-->
+    <lightning:select aura:id="idPicklist" label="Song Genre Filter" onchange="{!c.songsBasedOnGenre}">
+        <aura:iteration items="{!v.picklistValues}" var="genre">
+            <option value="{!genre}">{!genre}</option>
+        </aura:iteration>
+    </lightning:select>
+    <!--picklist ..-->
+    
+    <!--table ..-->
+    <br/>
+    <!--<lightning:datatable keyField="idTable"
+                         data="{!v.songRecordData}"
+                         columns="{!v.songRecordDataCloumnsList}"
+                         onrowselection="{!c.songCheckboxSelected}" />-->
+    <table class="slds-table slds-table--bordered ">
+        <thead>
+            <tr >
+                <th>Select</th>
+                <th>Name</th>
+                <th>Genre</th>
+                <th>Length</th>
+            </tr>
+        </thead>
+        <aura:iteration items="{!v.paginationList}" var="item">
+            <tbody>
+                <tr>
+                    <td><input type="checkbox" onchange="{!c.songCheckboxSelectedNew}"/></td>
+                    <td><ui:outputText value="{!item.Name}" /></td>
+                    <td><ui:outputText value="{!item.Genre__c}" /></td>
+                    <td><ui:outputText value="{!item.Length_m__c}" /></td>
+                </tr>
+            </tbody>
+        </aura:iteration>
+    </table>
+    <span class="slds-align_absolute-center" >
+        <lightning:button label="Previous" disabled="{!v.start == 0}"  onclick="{!c.previous}" />
+        <lightning:button label="Next" disabled="{!v.end >= v.totalSize}" onclick="{!c.next}" />
+    </span>
+    <!--table ..-->
+    <!--div for Songs ..-->
+    
+</aura:component>
